@@ -93,7 +93,7 @@ contract GovernorContract is Governor, GovernorSettings, GovernorCountingSimple,
     function _queueOperations(uint256 proposalId, address[] memory targets, uint256[] memory values, bytes[] memory calldatas, bytes32 descriptionHash)
         internal
         override(Governor, GovernorTimelockControl)
-        returns (uint256)
+        returns (uint48)
     {
         return super._queueOperations(proposalId, targets, values, calldatas, descriptionHash);
     }
@@ -110,9 +110,17 @@ contract GovernorContract is Governor, GovernorSettings, GovernorCountingSimple,
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(Governor, GovernorTimelockControl)
+        override(Governor)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
+    }
+
+    function _cancel(address[] memory targets, uint256[] memory values, bytes[] memory calldatas, bytes32 descriptionHash)
+        internal
+        override(Governor, GovernorTimelockControl)
+        returns (uint256)
+    {
+        return super._cancel(targets, values, calldatas, descriptionHash);
     }
 }
