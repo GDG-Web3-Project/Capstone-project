@@ -16,6 +16,7 @@ contract GovernanceTest is Test {
 
     function setUp() public {
         token = new GovernanceToken(address(this));
+        // Using 3600 (1 hour) as the minDelay for the Timelock
         timelock = new TimeLock(3600, new address[](0), new address[](0), address(this));
         governor = new GovernorContract(token, timelock);
 
@@ -31,43 +32,70 @@ contract GovernanceTest is Test {
         token.mint(address(timelock), 5 ether);
         
         vm.prank(USER);
-        token.delegate(USER); // Self-delegate to activate voting power
+        token.delegate(USER); 
     }
 
-    function testProposalWorkflow() public {
-        string memory description = "Proposal #1: Send 5 ETH to Marketing";
-        bytes memory callData = abi.encodeWithSignature("transfer(address,uint256)", address(0x123), 5 ether);
+    // --- NEW: Helper function to avoid repeating code ---
+    function _createAndPassProposal(address target, uint256 amount, string memory description) internal returns (uint256, bytes32) {
         address[] memory targets = new address[](1);
-        targets[0] = address(token); // Just for example, usually it's ETH from timelock
+        targets[0] = target;
         uint256[] memory values = new uint256[](1);
         values[0] = 0;
         bytes[] memory calldatas = new bytes[](1);
-        calldatas[0] = callData;
+        calldatas[0] = abi.encodeWithSignature("transfer(address,uint256)", address(0x123), amount);
 
         // 1. Propose
         uint256 proposalId = governor.propose(targets, values, calldatas, description);
-        console.log("Proposal ID:", proposalId);
-        
-        // Wait for voting delay
         vm.roll(block.number + governor.votingDelay() + 1);
 
         // 2. Vote
         vm.prank(USER);
-        governor.castVote(proposalId, 1); // 1 = For
-
-        // Wait for voting period
+        governor.castVote(proposalId, 1); 
         vm.roll(block.number + governor.votingPeriod() + 1);
 
         // 3. Queue
         bytes32 descriptionHash = keccak256(abi.encodePacked(description));
         governor.queue(targets, values, calldatas, descriptionHash);
         
-        // Wait for timelock
+        return (proposalId, descriptionHash);
+    }
+
+    function testProposalWorkflow() public {
+        string memory desc = "Proposal #1: Send 5 ETH";
+        (uint256 proposalId, bytes32 descHash) = _createAndPassProposal(address(token), 5 ether, desc);
+
         vm.warp(block.timestamp + 3601);
 
-        // 4. Execute
-        governor.execute(targets, values, calldatas, descriptionHash);
-        
-        assertEq(uint256(governor.state(proposalId)), 7); // 7 = Executed
+        // Prepare execution data
+        address[] memory targets = new address[](1);
+        targets[0] = address(token);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSignature("transfer(address,uint256)", address(0x123), 5 ether);
+
+        governor.execute(targets, values, calldatas, descHash);
+        assertEq(uint256(governor.state(proposalId)), 7); 
+    }
+
+    function testFuzz_ProposalExecution(uint256 grantAmount) public {
+        vm.assume(grantAmount > 0 && grantAmount <= 5 ether);
+        console.log("Testing DAO grant for amount:", grantAmount);
+        string memory desc = "Fuzz Test: Grant";
+        (uint256 proposalId, bytes32 descHash) = _createAndPassProposal(address(token), grantAmount, desc);
+
+        vm.warp(block.timestamp + 3601);
+
+        // Execute the fuzz amount
+        address[] memory targets = new address[](1);
+        targets[0] = address(token);
+        uint256[] memory values = new uint256[](1);
+        values[0] = 0;
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodeWithSignature("transfer(address,uint256)", address(0x123), grantAmount);
+
+        governor.execute(targets, values, calldatas, descHash);
+
+        assertEq(token.balanceOf(address(0x123)), grantAmount);
     }
 }
