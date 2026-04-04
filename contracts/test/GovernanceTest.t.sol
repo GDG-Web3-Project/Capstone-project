@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 import "../src/GovernanceToken.sol";
 import "../src/TimeLock.sol";
 import "../src/GovernorContract.sol";
-import "../script/DeployDAO.s.sol";
 
 contract GovernanceTest is Test {
     GovernanceToken token;
@@ -13,21 +12,13 @@ contract GovernanceTest is Test {
     GovernorContract governor;
     
     address public USER = makeAddr("user");
-    address public MINTER = makeAddr("minter");
     uint256 public constant INITIAL_SUPPLY = 100 ether;
 
     function setUp() public {
-        DeployDAO deployer = new DeployDAO();
-        deployer.run();
-        
-        // In a real scenario, we'd get these from the deployment script
-        // For simplicity in this test, let's redeploy or use the ones from the script if we can capture them
-        // Since deployer.run() doesn't return them easily without storage, let's just deploy manually here for the test
-        
         token = new GovernanceToken(address(this));
         timelock = new TimeLock(3600, new address[](0), new address[](0), address(this));
         governor = new GovernorContract(token, timelock);
-        
+
         bytes32 proposerRole = timelock.PROPOSER_ROLE();
         bytes32 executorRole = timelock.EXECUTOR_ROLE();
         bytes32 adminRole = timelock.DEFAULT_ADMIN_ROLE();
@@ -35,8 +26,9 @@ contract GovernanceTest is Test {
         timelock.grantRole(proposerRole, address(governor));
         timelock.grantRole(executorRole, address(0));
         timelock.revokeRole(adminRole, address(this));
-        
+
         token.mint(USER, INITIAL_SUPPLY);
+        token.mint(address(timelock), 5 ether);
         
         vm.prank(USER);
         token.delegate(USER); // Self-delegate to activate voting power
