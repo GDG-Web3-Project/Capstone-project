@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
+import {console2} from "forge-std/console2.sol";
 import {GovernanceToken} from "../src/GovernanceToken.sol";
 import {TimeLock} from "../src/TimeLock.sol";
 import {GovernorContract} from "../src/GovernorContract.sol";
@@ -37,7 +38,11 @@ contract DeployDAO is Script {
 
 	function run() external {
 		vm.startBroadcast();
-		deploy(msg.sender, DEFAULT_MIN_DELAY);
+		(GovernanceToken deployedToken, TimeLock deployedTimelock, GovernorContract deployedGovernor) =
+			deploy(msg.sender, DEFAULT_MIN_DELAY);
+		console2.log("GovernanceToken:", address(deployedToken));
+		console2.log("TimeLock:", address(deployedTimelock));
+		console2.log("GovernorContract:", address(deployedGovernor));
 		vm.stopBroadcast();
 	}
 }

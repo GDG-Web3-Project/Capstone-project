@@ -63,7 +63,7 @@ export default function WalletVotingStatus() {
   }
 
   const formattedVotes = formatUnits(
-    votingPower ?? 0n,
+    votingPower ?? BigInt(0),
     decimals ?? 18
   );
   const tokenSymbol = symbol || "TOKEN";

@@ -1,7 +1,7 @@
 import { getDaoSnapshot } from "@/lib/dao";
 import WalletConnectButton from "@/components/WalletConnectButton";
-import WalletVotingStatus from "@/components/WalletVotingStatus";
 import ProposalList from "@/components/ProposalList";
+import WalletVotingStatusClient from "@/components/WalletVotingStatusClient";
 
 export default async function Home() {
   const snapshot = await getDaoSnapshot();
@@ -66,7 +66,7 @@ export default async function Home() {
         </section>
 
         <section className="walletPanel">
-          <WalletVotingStatus />
+          <WalletVotingStatusClient />
         </section>
 
         <section className="section" id="proposals">

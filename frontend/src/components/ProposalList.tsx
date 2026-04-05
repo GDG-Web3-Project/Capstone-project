@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Address, formatUnits } from "viem";
+import { Address, formatUnits, parseAbiItem } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWriteContract } from "wagmi";
 import { governorAbi } from "@/lib/abis";
 import { getDaoConfig } from "@/lib/chain";
@@ -25,6 +25,18 @@ type ProposalEvent = {
   endBlock: bigint;
 };
 
+function isCompleteProposal(
+  proposal: Partial<ProposalEvent>
+): proposal is ProposalEvent {
+  return Boolean(
+    proposal.proposalId !== undefined &&
+      proposal.proposer &&
+      proposal.description &&
+      proposal.startBlock !== undefined &&
+      proposal.endBlock !== undefined
+  );
+}
+
 export default function ProposalList() {
   const { address, isConnected } = useAccount();
   const client = usePublicClient();
@@ -36,7 +48,7 @@ export default function ProposalList() {
 
   const fromBlock = useMemo(() => {
     const raw = process.env.NEXT_PUBLIC_PROPOSAL_FROM_BLOCK;
-    return raw ? BigInt(raw) : 0n;
+    return raw ? BigInt(raw) : BigInt(0);
   }, []);
 
   useEffect(() => {
@@ -49,19 +61,22 @@ export default function ProposalList() {
       try {
         const logs = await client.getLogs({
           address: governorAddress,
-          abi: governorAbi,
-          eventName: "ProposalCreated",
+          event: parseAbiItem(
+            "event ProposalCreated(uint256 proposalId, address proposer, address[] targets, uint256[] values, bytes[] calldatas, uint256 startBlock, uint256 endBlock, string description)"
+          ),
           fromBlock,
           toBlock: "latest",
         });
 
-        const mapped = logs.map((log) => ({
-          proposalId: log.args.proposalId as bigint,
-          proposer: log.args.proposer as Address,
-          description: log.args.description as string,
-          startBlock: log.args.startBlock as bigint,
-          endBlock: log.args.endBlock as bigint,
-        }));
+        const mapped = logs
+          .map((log) => ({
+            proposalId: log.args.proposalId,
+            proposer: log.args.proposer,
+            description: log.args.description,
+            startBlock: log.args.startBlock,
+            endBlock: log.args.endBlock,
+          }))
+          .filter(isCompleteProposal);
 
         if (isMounted) {
           setProposals(mapped.reverse());

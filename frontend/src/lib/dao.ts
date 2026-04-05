@@ -38,6 +38,8 @@ export async function getDaoSnapshot(): Promise<DaoSnapshot> {
 
   const client = getPublicClient();
   const blockNumber = await client.getBlockNumber();
+  const zero = BigInt(0);
+  const quorumBlock = blockNumber > zero ? blockNumber - BigInt(1) : zero;
 
   const [
     governorName,
@@ -70,7 +72,7 @@ export async function getDaoSnapshot(): Promise<DaoSnapshot> {
       address: config.addresses.governor!,
       abi: governorAbi,
       functionName: "quorum",
-      args: [blockNumber],
+      args: [quorumBlock],
     }),
     client.readContract({
       address: config.addresses.governor!,

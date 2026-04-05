@@ -15,8 +15,7 @@ function buildConfig() {
   const chainId = process.env.NEXT_PUBLIC_CHAIN_ID;
   const chain = chainId === "8453" ? base : baseSepolia;
   const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "https://sepolia.base.org";
-  const projectId =
-    process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
+  const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "";
 
   return getDefaultConfig({
     appName: "Capstone DAO",
