@@ -1,20 +1,21 @@
 "use client";
 
 import { WagmiProvider, createConfig, http } from "wagmi";
-import { foundry, mainnet } from "wagmi/chains";
+import { foundry, mainnet, baseSepolia } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
 import { ReactNode } from "react";
 
-// This tells Wagmi to connect to local Anvil node (127.0.0.1:8545)
+// Support both local Anvil and Base Sepolia
 const config = createConfig(
     getDefaultConfig({
-        chains: [foundry, mainnet],
+        chains: [foundry, baseSepolia, mainnet],
         transports: {
             [foundry.id]: http("http://127.0.0.1:8545"),
+            [baseSepolia.id]: http(),
             [mainnet.id]: http(),
         },
-        walletConnectProjectId: "", // can leave this empty for local dev
+        walletConnectProjectId: "", 
         appName: "Capstone DAO",
     }),
 );
